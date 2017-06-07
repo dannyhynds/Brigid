@@ -12,18 +12,12 @@
 #include <avr/interrupt.h>
 #include <avr/io.h>
 
-#define LED_POWER 12
-#define LED_STATUS 13
 #define RED_LED A4
 #define GREEN_LED A3
 #define BLUE_LED A2
-// brigid is 12 and 13
-// #define RED_LED 12
-// #define GREEN_LED 13
-// #define BLUE_LED 13
 
 char bytes[2];
-short notes[NUM_SOLENOIDS];
+short note_active[NUM_SOLENOIDS];
 
 int handshake = 0;
 int statustimer = 0;
@@ -49,20 +43,17 @@ void setup() {
     pinMode(actuators[i], OUTPUT);
     digitalWrite(actuators[i], LOW);
   }
-  if (BOOT_TEST == 1){
-    for (int i; i < 6; i++) {
-      notes[i] = 50;
-      delay(350);
-    } 
+  if (BOOT_TEST == 1) {
+    bootRoutine(350);
   }
 }
 
 ISR(TIMER2_OVF_vect) {
   // solenoid control
   for (int i = 0; i < NUM_SOLENOIDS; i++) {
-    if (notes[i] > 0) {
+    if (note_active[i] > 0) {
       digitalWrite(actuators[i], HIGH);
-      notes[i]--;
+      note_active[i]--;
     }
     else {
       digitalWrite(actuators[i], LOW);
@@ -77,7 +68,14 @@ ISR(TIMER2_OVF_vect) {
   }
 }
 
-void loop() {
+void bootRoutine(int delayTime) {
+  for (int i; i < NUM_SOLENOIDS; i++) {
+    note_active[i] = 50;
+    delay(delayTime);
+  }
+}
+
+void pollSerial() {
   if (Serial.available()) {
     if (Serial.read() == 0xff) {
       // reads in a two index array from ChucK
@@ -96,12 +94,16 @@ void loop() {
         Serial.write(ARDUINO_ID);
         handshake = 1;
         digitalWrite(GREEN_LED, LOW);
-        digitalWrite(RED_LED, LOW); 
+        digitalWrite(RED_LED, LOW);
       }
       if (pitch >= 0 && pitch <= NUM_SOLENOIDS) {
         statustimer = 120;
-        notes[pitch] = (velocity * 0.5);
+        note_active[pitch] = (velocity * 0.5);
       }
     }
   }
+}
+
+void loop() {
+  pollSerial();
 }
