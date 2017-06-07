@@ -1,8 +1,10 @@
 #define NUM_SOLENOIDS 6
 // botnum/board type/board num
+// pre-processor macros, never change //
 #define BOT_ID 1
 #define BOT_TYPE 1
 #define ARDUINO_ID 5
+
 
 #define BOOT_TEST 0
 #define LED_FEEDBACK 1
